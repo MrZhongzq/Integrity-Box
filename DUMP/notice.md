@@ -1,1 +1,1 @@
-🟢🟢🔴 DEVICE INTEGRITY | 13/01/2026
+🔴🔴🔴 Keybox is Banned | 28/01/2026
