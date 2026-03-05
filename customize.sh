@@ -5,13 +5,14 @@ MODDIR="${0%/*}"
 LOG_DIR="/data/adb/Box-Brain/Integrity-Box-Logs"
 INSTALL_LOG="$LOG_DIR/Installation.log"
 SCRIPT="$MODPATH/webroot/common_scripts"
+MEOW="/data/adb/modules/playintegrityfix"
 SRC="/data/adb/modules_update/playintegrityfix/module.prop"
-DEST="/data/adb/modules/playintegrityfix/module.prop"
+DEST="$MEOW/module.prop"
 FLAG="/data/adb/Box-Brain"
 
 # Create log directory if it doesn't exist
 mkdir -p "$LOG_DIR" || true
-mkdir -p "/data/adb/modules/playintegrityfix"
+mkdir -p "$MEOW"
 
 # Logger
 debug() {
@@ -89,7 +90,7 @@ hizru() {
 
     mkdir -p "$FLAG" "$LOG_DIR"
 
-    PKGS="com.samsung.android.app.updatecenter com.oplus.romupdate"
+    PKGS="com.samsung.android.app.updatecenter com.samsung.android.biometrics.app.setting com.samsung.android.game.gos com.oplus.romupdate"
     FOUND=0
     TS="$(date '+%Y-%m-%d %H:%M:%S')"
 
@@ -153,7 +154,7 @@ prepare_directories() {
 # Handle module prop file
 handle_module_props() {
     debug " ✦ Handling Module Properties "
-    touch "/data/adb/modules/playintegrityfix/update"
+    touch "$MEOW/update"
     cp "$SRC" "$DEST"
 }
 
@@ -244,8 +245,10 @@ echo "
                     
 "
 
-# Copy local fingerprint to correct path so that user doesn't have to fetch it manually after installation 
-if [ ! -f "/data/adb/modules/playintegrityfix/service.sh" ]; then
+# Set fingerprint on installation 
+if [ -f "/data/adb/modules/playintegrityfix/custom.pif.prop" ]; then
+    cp "/data/adb/modules/playintegrityfix/custom.pif.prop" "$MODPATH/custom.pif.prop"
+elif [ ! -f "/data/adb/modules/playintegrityfix/service.sh" ]; then
     cp "$MODPATH/fingerprint/custom.pif.prop" "$MODPATH/custom.pif.prop"
 fi
 
@@ -263,11 +266,16 @@ fi
 install_module
 
 debug " ✦ Setting IntegrityBox Profile"
-if [ "$SDK" -ge 33 ]; then
-    touch "$FLAG/advanced"
-else
-    touch "$FLAG/legacy"
+# Only set profile on fresh installation 
+if [ ! -f "/data/adb/modules/playintegrityfix/service.sh" ]; then
+    if [ "$SDK" -ge 33 ]; then
+        touch "$FLAG/pixelify"
+    else
+        touch "$FLAG/legacy"
+    fi
 fi
+
+
 
 debug " ✦ Detecting ROM signature"
 # Get the signature of the "android" package
@@ -287,7 +295,7 @@ esac
 # Write security patch file if missing 
 if [ ! -f /data/adb/tricky_store/security_patch.txt ]; then
 cat <<EOF > /data/adb/tricky_store/security_patch.txt
-all=2026-02-01
+all=2026-03-01
 EOF
 fi
 
@@ -312,16 +320,16 @@ if [ -e /sdcard/zygisk ] || [ -f /data/adb/Box-Brain/zygisk ]; then
         $MODPATH/custom.pif.json \
         $MODPATH/example.pif.prop \
         $MODPATH/pif.json $MODPATH/pif.prop $MODPATH/zygisk \
-        /data/adb/modules/playintegrityfix/custom.app_replace_list.txt \
-        /data/adb/modules/playintegrityfix/custom.pif.json \
-        /data/adb/modules/playintegrityfix/skippersistprop \
-        /data/adb/modules/playintegrityfix/system
+        $MEOW/custom.app_replace_list.txt \
+        $MEOW/custom.pif.json \
+        $MEOW/skippersistprop \
+        $MEOW/system
 fi
 
 # Copy any disabled app files to updated module
-if [ -d /data/adb/modules/playintegrityfix/system ]; then
+if [ -d $MEOW/system ]; then
     debug " ✦ Restoring disabled ROM apps configuration"
-    cp -afL /data/adb/modules/playintegrityfix/system $MODPATH
+    cp -afL $MEOW/system $MODPATH
 fi
 
 # Warn if potentially conflicting modules are installed
