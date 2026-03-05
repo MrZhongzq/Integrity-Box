@@ -1,10 +1,12 @@
 id=playintegrityfix
 name=.𝙄𝙣𝙩𝙚𝙜𝙧𝙞𝙩𝙮 𝘽𝙤𝙭 📦
-version=v31
-versionCode=31000
+version=v32
+versionCode=32000
 author=𝗠𝗘𝗢𝗪𝗻𝗮 💅
 updateJson=https://raw.githubusercontent.com/MeowDump/Integrity-Box/refs/heads/main/release.json
 support=https://t.me/MeowDump
-donate=MeowDump.github.io
+donate=https://MeowDump.github.io
 banner=meow.png
+webuiIcon=icon.png
+actionIcon=icon.png
 description=A toolkit for managing play integrity & system environment 
