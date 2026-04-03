@@ -1,5 +1,11 @@
 #!/system/bin/sh
 MODPATH="${0%/*}"
+
+# If module is disabled, do nothing
+if [ -f "$MODPATH/disable" ]; then
+    exit 0
+fi
+
 . $MODPATH/common_func.sh
 
 # Module path and file references

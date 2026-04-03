@@ -4,10 +4,22 @@ MODPATH="${0%/*}"
 
 boot="/data/adb/service.d"
 placeholder="/data/adb/modules/playintegrityfix/webroot/common_scripts"
+DISABLE_FILE="/data/adb/modules/playintegrityfix/disable"
+
+# If module is disabled, clean up all external files and exit
+if [ -f "$DISABLE_FILE" ]; then
+    # Remove all service.d scripts created by this module
+    rm -f "$boot/prop.sh" "$boot/hash.sh" "$boot/lineage.sh" \
+          "$boot/shamiko.sh" "$boot/package.sh" "$boot/.box_cleanup.sh"
+    # Remove system.prop to stop property spoofing
+    rm -f "/data/adb/modules/playintegrityfix/system.prop"
+    exit 0
+fi
+
 mkdir -p "/data/adb/Box-Brain/Integrity-Box-Logs"
 mkdir -p "$boot"
 
-# Grant perms 
+# Grant perms
 if [ -f "$placeholder/autopilot.sh" ]; then
     chmod 755 "$placeholder/autopilot.sh"
 fi
@@ -423,6 +435,7 @@ cat <<'EOF' > "$boot/.box_cleanup.sh"
 # It only runs if IntegrityBox is not installed
 
 PROP_FILE="/data/adb/modules/playintegrityfix/module.prop"
+DISABLE_FILE="/data/adb/modules/playintegrityfix/disable"
 REQUIRED_LINE="support=https://t.me/MeowDump"
 LOG_DIR="/data/adb/Box-Brain"
 
@@ -434,18 +447,19 @@ SERVICE_FILES="
 /data/adb/service.d/package.sh
 "
 
-# Check if the prop file exists and contains the required line
-if [ ! -f "$PROP_FILE" ] || ! grep -Fq "$REQUIRED_LINE" "$PROP_FILE"; then
+# Clean up if module is uninstalled OR disabled
+if [ ! -f "$PROP_FILE" ] || ! grep -Fq "$REQUIRED_LINE" "$PROP_FILE" || [ -f "$DISABLE_FILE" ]; then
     # Delete leftover files if they exist
     for file in $SERVICE_FILES; do
         [ -e "$file" ] && rm -rf "$file"
     done
 
-    # Delete Box-Brain folder if it exists
-    [ -d "$LOG_DIR" ] && rm -rf "$LOG_DIR"
-
-    # Delete this script itself
-    rm -f "$0"
+    if [ ! -f "$PROP_FILE" ] || ! grep -Fq "$REQUIRED_LINE" "$PROP_FILE"; then
+        # Full cleanup only on uninstall (not just disable)
+        [ -d "$LOG_DIR" ] && rm -rf "$LOG_DIR"
+        # Delete this script itself
+        rm -f "$0"
+    fi
 fi
 EOF
 
@@ -757,6 +771,11 @@ chmod 777 "$placeholder/hma.sh"
 cat <<'EOF' > "$boot/package.sh"
 #!/system/bin/sh
 
+# Exit if module is disabled
+if [ -f "/data/adb/modules/playintegrityfix/disable" ]; then
+    exit 0
+fi
+
 # Check if required module folders exist
 # These modules add system app package names to target.txt which ruins keybox & increases battery drain
 MODULE1="/data/adb/modules/.TA_utl"
@@ -961,6 +980,11 @@ chmod 777 "$boot/lineage.sh"
 cat <<'EOF' > "$boot/hash.sh"
 #!/system/bin/sh
 
+# Exit if module is disabled
+if [ -f "/data/adb/modules/playintegrityfix/disable" ]; then
+    exit 0
+fi
+
 HASH_FILE="/data/adb/Box-Brain/hash.txt"
 LOG_DIR="/data/adb/Box-Brain/Integrity-Box-Logs"
 LOG_FILE="$LOG_DIR/vbmeta.log"
@@ -971,7 +995,7 @@ log() {
   echo "$(date '+%Y-%m-%d %H:%M:%S') | $1" >> "$LOG_FILE"
 }
 
-# Stop when safe mode is enabled 
+# Stop when safe mode is enabled
 if [ -f "/data/adb/Box-Brain/safemode" ]; then
     log " Permission denied by Safe Mode"
     exit 1
@@ -1045,6 +1069,11 @@ chmod 777 "$boot/hash.sh"
 #if [ ! -f "$boot/prop.sh" ]; then
 cat <<'EOF' > "$boot/prop.sh"
 #!/system/bin/sh
+
+# Exit if module is disabled
+if [ -f "/data/adb/modules/playintegrityfix/disable" ]; then
+    exit 0
+fi
 
 # CONFIG
 PATCH_DATE="2026-04-01"
@@ -1136,7 +1165,12 @@ if [ ! -f "/data/adb/modules/zygisk_shamiko/module.prop" ]; then
    cat <<'EOF' > "$boot/shamiko.sh"
 #!/system/bin/sh
 
-# Stop when safe mode is enabled 
+# Exit if module is disabled
+if [ -f "/data/adb/modules/playintegrityfix/disable" ]; then
+    exit 0
+fi
+
+# Stop when safe mode is enabled
 if [ -f "/data/adb/Box-Brain/safemode" ]; then
     echo " Permission denied by Safe Mode"
     exit 1
